@@ -1,0 +1,5 @@
+
+# Large local files
+*.7z
+test_100MB.txt
+test_1GB.txt

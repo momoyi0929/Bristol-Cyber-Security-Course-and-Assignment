@@ -1,0 +1,136 @@
+# ==================== Makefile for File Integrity Checker ====================
+# Author: [Your Name]
+# Module: Foundations of Cyber Security (MSc)
+# Date: October 2025
+#
+# Usage:
+#   make          - Build the executable (auto-detect platform)
+#   make linux    - Build for Linux (Ubuntu/Debian)
+#   make mac      - Build for macOS with Homebrew
+#   make clean    - Remove build artifacts
+#   make rebuild  - Clean and rebuild
+#   make help     - Show available targets
+# ==============================================================================
+
+# -------------------- Compiler Configuration --------------------
+CC = gcc
+CFLAGS = -Wall -Wextra -Werror -O2 -std=c11
+LDFLAGS = -lssl -lcrypto
+
+# Auto-detect platform and set flags
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Darwin)
+    # macOS with Homebrew
+    CFLAGS += -I/opt/homebrew/opt/openssl/include
+    LDFLAGS += -L/opt/homebrew/opt/openssl/lib
+    PLATFORM = macOS
+else ifeq ($(UNAME_S),Linux)
+    # Linux (Ubuntu/Debian) - use standard paths
+    PLATFORM = Linux
+    # Optionally add pkg-config support
+    ifneq ($(shell which pkg-config 2>/dev/null),)
+        CFLAGS += $(shell pkg-config --cflags openssl 2>/dev/null)
+        LDFLAGS += $(shell pkg-config --libs openssl 2>/dev/null)
+    endif
+else
+    PLATFORM = Unknown
+endif
+
+# -------------------- Project Files --------------------
+TARGET = filehash
+SOURCES = filehash.c
+OBJECTS = $(SOURCES:.c=.o)
+
+# -------------------- Colors for Output --------------------
+GREEN = \033[1;32m
+YELLOW = \033[1;33m
+BLUE = \033[1;34m
+RED = \033[1;31m
+RESET = \033[0m
+
+# -------------------- Default Target --------------------
+.PHONY: all
+all: $(TARGET)
+	@echo "$(GREEN)✓ Build complete for $(PLATFORM): $(TARGET)$(RESET)"
+	@echo "$(BLUE)Run './$(TARGET) --help' for usage information$(RESET)"
+
+# -------------------- Build Executable --------------------
+$(TARGET): $(OBJECTS)
+	@echo "$(YELLOW)Linking $(TARGET) for $(PLATFORM)...$(RESET)"
+	$(CC) $(CFLAGS) -o $(TARGET) $(OBJECTS) $(LDFLAGS)
+
+# -------------------- Compile Object Files --------------------
+%.o: %.c
+	@echo "$(YELLOW)Compiling $< for $(PLATFORM)...$(RESET)"
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# -------------------- Platform-specific Targets --------------------
+
+# Linux build (Ubuntu/Debian)
+.PHONY: linux
+linux: CFLAGS = -Wall -Wextra -Werror -O2 -std=c11
+linux: LDFLAGS = -lssl -lcrypto
+linux: $(TARGET)
+	@echo "$(GREEN)✓ Linux build complete: $(TARGET)$(RESET)"
+
+# macOS build with Homebrew
+.PHONY: mac
+mac: CFLAGS = -Wall -Wextra -Werror -O2 -std=c11 -I/opt/homebrew/opt/openssl/include
+mac: LDFLAGS = -L/opt/homebrew/opt/openssl/lib -lssl -lcrypto
+mac: $(TARGET)
+	@echo "$(GREEN)✓ macOS build complete: $(TARGET)$(RESET)"
+
+# -------------------- Clean Build Artifacts --------------------
+.PHONY: clean
+clean:
+	@echo "$(YELLOW)Cleaning build artifacts...$(RESET)"
+	rm -f $(OBJECTS) $(TARGET)
+	@echo "$(GREEN)✓ Clean complete$(RESET)"
+
+# -------------------- Rebuild from Scratch --------------------
+.PHONY: rebuild
+rebuild: clean all
+
+# -------------------- Debug Build --------------------
+.PHONY: debug
+debug: CFLAGS = -Wall -Wextra -g -DDEBUG -std=c11 -Wno-deprecated-declarations
+debug: $(TARGET)
+	@echo "$(GREEN)✓ Debug build complete: $(TARGET)$(RESET)"
+
+# -------------------- Install Dependencies --------------------
+.PHONY: install-deps
+install-deps:
+	@echo "$(BLUE)Installing dependencies for Ubuntu...$(RESET)"
+	sudo apt-get update
+	sudo apt-get install -y build-essential libssl-dev
+	@echo "$(GREEN)✓ Dependencies installed$(RESET)"
+
+# -------------------- Check Dependencies --------------------
+.PHONY: check-deps
+check-deps:
+	@echo "$(BLUE)Checking dependencies for $(PLATFORM)...$(RESET)"
+	@which $(CC) > /dev/null && echo "$(GREEN)✓ $(CC) found$(RESET)" || echo "$(RED)✗ $(CC) not found$(RESET)"
+	@echo "$(BLUE)Checking OpenSSL...$(RESET)"
+	@if [ -f /usr/include/openssl/ssl.h ]; then \
+		echo "$(GREEN)✓ OpenSSL development headers found$(RESET)"; \
+	elif pkg-config --exists openssl 2>/dev/null; then \
+		echo "$(GREEN)✓ OpenSSL found via pkg-config$(RESET)"; \
+	else \
+		echo "$(RED)✗ OpenSSL development headers not found$(RESET)"; \
+		echo "$(YELLOW)Run 'make install-deps' to install dependencies$(RESET)"; \
+	fi
+
+# -------------------- Test the Build --------------------
+.PHONY: test
+test: $(TARGET)
+	@echo "$(BLUE)Testing $(TARGET)...$(RESET)"
+	@echo "Creating test file..."
+	@echo "This is a test file for hashing" > test_file.txt
+	@echo "Testing default algorithm (SHA256)..."
+	@./$(TARGET) test_file.txt > /dev/null && echo "$(GREEN)✓ SHA256 test passed$(RESET)" || echo "$(RED)✗ SHA256 test failed$(RESET)"
+	@echo "Testing SHA512 algorithm..."
+	@./$(TARGET) -a sha512 test_file.txt > /dev/null && echo "$(GREEN)✓ SHA512 test passed$(RESET)" || echo "$(RED)✗ SHA512 test failed$(RESET)"
+	@echo "Testing help command..."
+	@./$(TARGET) --help > /dev/null && echo "$(GREEN)✓ Help test passed$(RESET)" || echo "$(RED)✗ Help test failed$(RESET)"
+	@rm -f test_file.txt
+	@echo "$(GREEN)✓ All tests completed$(RESET)"

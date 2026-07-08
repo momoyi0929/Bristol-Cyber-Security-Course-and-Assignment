@@ -1,0 +1,104 @@
+# ==================== Makefile for File Integrity Checker ====================
+# Author: [Your Name]
+# Module: Foundations of Cyber Security (MSc)
+# Date: October 2025
+#
+# Usage:
+#   make          - Build the executable
+#   make clean    - Remove build artifacts
+#   make rebuild  - Clean and rebuild
+#   make help     - Show available targets
+# ==============================================================================
+
+# -------------------- Compiler Configuration --------------------
+CC = gcc
+CFLAGS = -Wall -Wextra -Werror -O2 -std=c11
+INCLUDE = -I/opt/homebrew/opt/openssl/include
+LDFLAGS = -L/opt/homebrew/opt/openssl/lib -lssl -lcrypto
+
+# -------------------- Project Files --------------------
+TARGET = filehash
+SOURCES = src/filehash.c
+OBJECTS = $(SOURCES:.c=.o)
+
+# -------------------- Colors for Output --------------------
+GREEN = \033[1;32m
+YELLOW = \033[1;33m
+BLUE = \033[1;34m
+RED = \033[1;31m
+RESET = \033[0m
+
+# -------------------- Default Target --------------------
+.PHONY: all
+all: $(TARGET)
+	@echo "$(GREEN)✓ Build complete: $(TARGET)$(RESET)"
+	@echo "$(BLUE)Run './$(TARGET) --help' for usage information$(RESET)"
+
+# -------------------- Build Executable --------------------
+$(TARGET): $(OBJECTS)
+	@echo "$(YELLOW)Linking $(TARGET)...$(RESET)"
+	$(CC) $(CFLAGS) -o $(TARGET) $(OBJECTS) $(LDFLAGS)
+
+# -------------------- Compile Object Files --------------------
+%.o: %.c
+	@echo "$(YELLOW)Compiling $<...$(RESET)"
+	$(CC) $(CFLAGS) $(INCLUDE) -c $< -o $@
+
+# -------------------- Clean Build Artifacts --------------------
+.PHONY: clean
+clean:
+	@echo "$(YELLOW)Cleaning build artifacts...$(RESET)"
+	rm -f $(OBJECTS) $(TARGET)
+	@echo "$(GREEN)✓ Clean complete$(RESET)"
+
+# -------------------- Rebuild from Scratch --------------------
+.PHONY: rebuild
+rebuild: clean all
+
+# -------------------- Debug Build --------------------
+.PHONY: debug
+debug: CFLAGS = -Wall -Wextra -g -DDEBUG -std=c11 -Wno-deprecated-declarations
+debug: INCLUDE = -I/opt/homebrew/opt/openssl/include
+debug: LDFLAGS = -L/opt/homebrew/opt/openssl/lib -lssl -lcrypto
+debug: $(TARGET)
+	@echo "$(GREEN)✓ Debug build complete: $(TARGET)$(RESET)"
+
+# -------------------- Install (optional) --------------------
+.PHONY: install
+install: $(TARGET)
+	@echo "$(YELLOW)Installing $(TARGET) to /usr/local/bin...$(RESET)"
+	cp $(TARGET) /usr/local/bin/
+	@echo "$(GREEN)✓ Installation complete$(RESET)"
+
+# -------------------- Show Help --------------------
+.PHONY: help
+help:
+	@echo "$(BLUE)============================================$(RESET)"
+	@echo "$(BLUE)  File Integrity Checker - Makefile Help  $(RESET)"
+	@echo "$(BLUE)============================================$(RESET)"
+	@echo ""
+	@echo "Available targets:"
+	@echo ""
+	@echo "  $(GREEN)make$(RESET)              - Build the executable"
+	@echo "  $(GREEN)make clean$(RESET)        - Remove build artifacts"
+	@echo "  $(GREEN)make rebuild$(RESET)      - Clean and rebuild"
+	@echo "  $(GREEN)make debug$(RESET)        - Build with debug symbols and no warnings as errors"
+	@echo "  $(GREEN)make install$(RESET)      - Install to /usr/local/bin (optional)"
+	@echo "  $(GREEN)make help$(RESET)         - Show this help message"
+	@echo ""
+	@echo "Examples:"
+	@echo "  $(YELLOW)make$(RESET)"
+	@echo "  $(YELLOW)make clean$(RESET)"
+	@echo "  $(YELLOW)make rebuild$(RESET)"
+	@echo "  $(YELLOW)make debug$(RESET)"
+	@echo "  $(YELLOW)./$(TARGET) myfile.txt$(RESET)"
+	@echo "  $(YELLOW)./$(TARGET) -a sha512 myfile.txt$(RESET)"
+	@echo ""
+
+# -------------------- Check Dependencies --------------------
+.PHONY: check-deps
+check-deps:
+	@echo "$(BLUE)Checking dependencies...$(RESET)"
+	@which $(CC) > /dev/null && echo "$(GREEN)✓ $(CC) found$(RESET)" || echo "$(RED)✗ $(CC) not found$(RESET)"
+	@test -d /opt/homebrew/opt/openssl/include && echo "$(GREEN)✓ OpenSSL headers found$(RESET)" || echo "$(RED)✗ OpenSSL headers not found$(RESET)"
+	@test -d /opt/homebrew/opt/openssl/lib && echo "$(GREEN)✓ OpenSSL libraries found$(RESET)" || echo "$(RED)✗ OpenSSL libraries not found$(RESET)"

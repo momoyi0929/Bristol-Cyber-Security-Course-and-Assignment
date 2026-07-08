@@ -1,0 +1,41 @@
+# ==================== Makefile for File Integrity Checker ====================
+# Author: Yi
+# Module: Foundations of Cyber Security (MSc)
+# Date: October 2025
+#
+# Usage:
+#   make          - Build the executable
+#   make clean    - Remove build artifacts
+#   make rebuild  - Clean and rebuild
+# ==============================================================================
+
+# -------------------- Compiler Configuration --------------------
+CC = gcc
+CFLAGS = -Wall -Wextra -std=c11 -Wno-deprecated-declarations
+LDFLAGS = -lssl -lcrypto
+
+# -------------------- Project Files --------------------
+TARGET = filehash
+SOURCES = filehash.c
+OBJECTS = $(SOURCES:.c=.o)
+
+# -------------------- Default Target --------------------
+.PHONY: all
+all: $(TARGET)
+
+# -------------------- Build Executable --------------------
+$(TARGET): $(OBJECTS)
+	$(CC) $(CFLAGS) -o $(TARGET) $(OBJECTS) $(LDFLAGS)
+
+# -------------------- Compile Object Files --------------------
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# -------------------- Clean Build Artifacts --------------------
+.PHONY: clean
+clean:
+	rm -f $(OBJECTS) $(TARGET)
+
+# -------------------- Rebuild from Scratch --------------------
+.PHONY: rebuild
+rebuild: clean all
